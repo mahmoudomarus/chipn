@@ -1,12 +1,39 @@
 import React, { useState } from 'react';
+import { supabase } from '../../lib/supabase';
 
 export default function Auth() {
     const [formData, setFormData] = useState({ email: '', password: '', idDocument: null });
     const [isLogin, setIsLogin] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert(`Submitting ${isLogin ? 'Login' : 'Signup'} with ID constraints.`);
+        setLoading(true);
+        setMessage('');
+
+        try {
+            if (isLogin) {
+                const { error } = await supabase.auth.signInWithPassword({
+                    email: formData.email,
+                    password: formData.password,
+                });
+                if (error) throw error;
+                setMessage('Successfully logged in!');
+            } else {
+                // ID document upload would go to a storage bucket here before signup
+                const { error } = await supabase.auth.signUp({
+                    email: formData.email,
+                    password: formData.password,
+                });
+                if (error) throw error;
+                setMessage('Registration successful! Please check your email for verification.');
+            }
+        } catch (error) {
+            setMessage(`Error: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -42,10 +69,16 @@ export default function Auth() {
                     </div>
                 )}
 
-                <button type="submit" style={{ width: '100%' }}>
-                    {isLogin ? 'ENTER PLATFORM' : 'VERIFY & REGISTER'}
+                <button type="submit" disabled={loading} style={{ width: '100%', opacity: loading ? 0.7 : 1 }}>
+                    {loading ? 'PROCESSING...' : (isLogin ? 'ENTER PLATFORM' : 'VERIFY & REGISTER')}
                 </button>
             </form>
+
+            {message && (
+                <div className="border-box mt-4" style={{ backgroundColor: message.includes('Error') ? '#ffdddd' : '#ddffdd', borderColor: message.includes('Error') ? '#cc0000' : '#00cc00' }}>
+                    <p style={{ margin: 0, fontWeight: 700 }}>{message}</p>
+                </div>
+            )}
 
             <div className="text-center mt-4">
                 <button

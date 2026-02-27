@@ -1,7 +1,11 @@
 import os
+from dotenv import load_dotenv
 from supabase import create_client, Client
 from anthropic import AsyncAnthropic
 import redis.asyncio as redis
+
+# Load local environment variables from .env
+load_dotenv()
 
 # Environment variables
 SUPABASE_URL = os.environ.get("VITE_SUPABASE_URL", "http://localhost:54321")
