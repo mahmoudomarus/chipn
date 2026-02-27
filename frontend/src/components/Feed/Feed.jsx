@@ -19,6 +19,53 @@ const TYPE_CFG = {
     request: { tag: 'tag-request', label: 'Request' },
 };
 
+const TIMER_DURATION = 120; // seconds
+
+/* ─── Video Timer ────────────────────────────────────────────────── */
+/**
+ * Thin red progress bar at the top of the card.
+ * Counts from TIMER_DURATION down to 0. On expiry, fires 'feed:advance' custom event.
+ * Only renders when both `active` and `hasVideo` are true.
+ */
+function VideoTimer({ active, hasVideo, cardIndex }) {
+    const [remaining, setRemaining] = useState(TIMER_DURATION);
+    const intervalRef = useRef(null);
+
+    useEffect(() => {
+        if (!active || !hasVideo) {
+            clearInterval(intervalRef.current);
+            setRemaining(TIMER_DURATION);
+            return;
+        }
+        intervalRef.current = setInterval(() => {
+            setRemaining(prev => {
+                if (prev <= 1) {
+                    clearInterval(intervalRef.current);
+                    window.dispatchEvent(new CustomEvent('feed:advance', { detail: { from: cardIndex } }));
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(intervalRef.current);
+    }, [active, hasVideo, cardIndex]);
+
+    if (!hasVideo) return null;
+
+    const pct = (remaining / TIMER_DURATION) * 100;
+    return (
+        <div style={{ position: 'absolute', top: 64, left: 0, right: 0, height: 2, zIndex: 30, background: 'rgba(255,255,255,0.1)' }}>
+            <div style={{
+                height: '100%',
+                width: `${pct}%`,
+                background: 'var(--red)',
+                transition: 'width 1s linear',
+            }} />
+        </div>
+    );
+}
+
+
 /* ─── Helpers ────────────────────────────────────────────────────── */
 /**
  * Extracts a YouTube embed URL from a full YouTube watch URL or already-embed URL.
@@ -220,12 +267,13 @@ function InvestModal({ post, user, onClose }) {
     const BIG = Number(amount) > 10000;
     const cfg = TYPE_CFG[post.type] || TYPE_CFG.idea;
 
+    const { getAuthHeaders } = useAuth();
     const submit = useCallback(async (ddNotes) => {
         setLoading(true);
         try {
-            const r = await fetch(`${API}/investments/?investor_id=${user.id}`, {
+            const r = await fetch(`${API}/investments/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ post_id: post.id, amount: Number(amount) }),
             });
             if (!r.ok) throw new Error(await r.text());
@@ -233,7 +281,7 @@ function InvestModal({ post, user, onClose }) {
                 const inv = await r.json();
                 await fetch(`${API}/investments/due-diligence`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ investment_id: inv.id, notes: ddNotes }),
                 });
             }
@@ -243,7 +291,7 @@ function InvestModal({ post, user, onClose }) {
         } finally {
             setLoading(false);
         }
-    }, [post.id, user.id, amount]);
+    }, [post.id, amount, getAuthHeaders]);
 
     return (
         <div style={{
@@ -338,7 +386,7 @@ function SwipeHint({ direction }) {
 }
 
 /* ─── Single Feed Card ───────────────────────────────────────────── */
-function FeedCard({ item, active, onInvest, onBoost }) {
+function FeedCard({ item, active, onInvest, onBoost, cardIndex }) {
     const [swipeDir, setSwipeDir] = useState(null); // null | 'left' | 'right'
     const [dragX, setDragX] = useState(0);
     const [showDrawer, setShowDrawer] = useState(false);
@@ -418,6 +466,9 @@ function FeedCard({ item, active, onInvest, onBoost }) {
                     transition: isDragging.current ? 'none' : 'transform 0.2s ease',
                 }}
             >
+                {/* ── Video Timer progress bar ── */}
+                <VideoTimer active={active} hasVideo={hasVideo} cardIndex={cardIndex} />
+
                 {/* ── Video Layer ── */}
                 {hasVideo && <VideoPlayer url={item.video_url} active={active} />}
 
@@ -600,7 +651,7 @@ function FeedCard({ item, active, onInvest, onBoost }) {
 
 /* ─── Main Feed ──────────────────────────────────────────────────── */
 export default function Feed() {
-    const { user } = useAuth();
+    const { user, getAuthHeaders } = useAuth();
     const navigate = useNavigate();
 
     const [items, setItems] = useState([]);
@@ -667,11 +718,23 @@ export default function Feed() {
     };
 
     const handleBoost = async (item) => {
-        // Optimistic local update
+        if (!user) return; // can't boost without auth
         setItems(prev => prev.map(p => p.id === item.id ? { ...p, boost_count: (p.boost_count || 0) + 1 } : p));
-        // Persist to backend
-        await fetch(`${API}/posts/${item.id}/boost`, { method: 'PATCH' });
+        await fetch(`${API}/posts/${item.id}/boost`, { method: 'PATCH', headers: getAuthHeaders() });
     };
+
+    /* Auto-advance on feed:advance event from VideoTimer */
+    useEffect(() => {
+        const handler = (e) => {
+            const nextIdx = e.detail.from + 1;
+            const container = containerRef.current;
+            if (!container) return;
+            const nextCard = container.querySelector(`[data-feed-card="${nextIdx}"]`);
+            if (nextCard) nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+        window.addEventListener('feed:advance', handler);
+        return () => window.removeEventListener('feed:advance', handler);
+    }, []);
 
     if (error) return (
         <div style={{ paddingTop: 64, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -708,6 +771,7 @@ export default function Feed() {
                             active={idx === activeIndex}
                             onInvest={handleInvest}
                             onBoost={handleBoost}
+                            cardIndex={idx}
                         />
                     </div>
                 ))}

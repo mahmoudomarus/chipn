@@ -2,10 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext();
-
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [session, setSession] = useState(null);
@@ -18,26 +15,28 @@ export const AuthProvider = ({ children }) => {
             setUser(session?.user ?? null);
             setLoading(false);
         });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                setSession(session);
-                setUser(session?.user ?? null);
-                setLoading(false);
-            }
-        );
-
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoading(false);
+        });
         return () => subscription.unsubscribe();
     }, []);
 
-    const val = {
-        session,
-        user,
-        signOut: () => supabase.auth.signOut(),
+    /**
+     * Returns headers object with Authorization Bearer token if the user is logged in.
+     * Pass into fetch calls: fetch(url, { headers: getAuthHeaders() })
+     */
+    const getAuthHeaders = () => {
+        const token = session?.access_token;
+        return {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        };
     };
 
     return (
-        <AuthContext.Provider value={val}>
+        <AuthContext.Provider value={{ session, user, loading, getAuthHeaders, signOut: () => supabase.auth.signOut() }}>
             {!loading && children}
         </AuthContext.Provider>
     );

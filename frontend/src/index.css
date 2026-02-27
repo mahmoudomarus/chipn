@@ -540,19 +540,98 @@ textarea {
 /* ─── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   :root {
-    --text-3xl: 3rem;
-    --text-4xl: 4.5rem;
+    --text-3xl: 2.5rem;
+    --text-4xl: 3.5rem;
+    --text-2xl: 2rem;
+    --text-xl: 1.75rem;
   }
 
+  /* Hide elements that only make sense on desktop */
   .hide-mobile {
     display: none !important;
   }
 
+  /* Container padding */
   .container {
     padding: 0 calc(var(--sp) * 3);
   }
 
+  /* Feed cards */
   .feed-item {
-    padding: 0 calc(var(--sp) * 3);
+    padding: calc(var(--sp) * 6) calc(var(--sp) * 3);
+    min-height: 100svh;
+  }
+
+  /* Submit — two-column grid → single column */
+  .submit-grid {
+    grid-template-columns: 1fr !important;
+    gap: calc(var(--sp) * 6) !important;
+    padding: calc(var(--sp) * 5) calc(var(--sp) * 3) !important;
+  }
+
+  /* Submit type selector — horizontal row on mobile */
+  .type-selector-col {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0;
+    border-top: none;
+  }
+
+  /* Auth split-pane: hide left brand panel, full-width form */
+  .auth-brand-panel {
+    display: none !important;
+  }
+
+  .auth-form-panel {
+    width: 100% !important;
+    padding: calc(var(--sp) * 5) calc(var(--sp) * 3) !important;
+  }
+
+  /* Profile header stats row */
+  .stats-row {
+    flex-direction: column;
+    gap: calc(var(--sp) * 2);
+  }
+
+  /* NavBar: hide text labels on small screens */
+  .nav-link-label {
+    display: none;
+  }
+
+  /* Home stats bar */
+  .home-stats {
+    flex-direction: column;
+    gap: calc(var(--sp) * 3);
+  }
+
+  /* Drawer max-height */
+  .post-drawer {
+    max-height: 92svh;
+    padding: 24px 20px 40px !important;
+  }
+
+  /* Buttons full-width on mobile forms */
+  .btn-primary.w-full,
+  .btn-red.w-full {
+    padding: 16px !important;
+    font-size: 0.75rem;
+  }
+
+  /* Reduced text in swipe hint on mobile */
+  .swipe-hint-label {
+    font-size: 9px;
+  }
+}
+
+/* Phones in portrait */
+@media (max-width: 480px) {
+  :root {
+    --text-xl: 1.5rem;
+    --text-2xl: 1.75rem;
+  }
+
+  .feed-item {
+    padding: calc(var(--sp) * 5) calc(var(--sp) * 2.5);
   }
 }

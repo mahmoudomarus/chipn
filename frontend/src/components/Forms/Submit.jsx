@@ -15,7 +15,7 @@ const INITIAL = {
 };
 
 export default function Submit() {
-    const { user } = useAuth();
+    const { user, getAuthHeaders } = useAuth();
     const navigate = useNavigate();
     const [form, setForm] = useState(INITIAL);
     const [loading, setLoading] = useState(false);
@@ -33,20 +33,20 @@ export default function Submit() {
         try {
             const sumRes = await fetch(
                 `http://localhost:8000/ai/summarize?content=${encodeURIComponent(form.title + ' — ' + form.description)}`,
-                { method: 'POST' }
+                { method: 'POST', headers: getAuthHeaders() }
             );
             if (!sumRes.ok) throw new Error('AI summarization failed.');
             const { summary } = await sumRes.json();
             setAiSummary(summary); setStage('saving');
 
-            const body = { author_id: user.id, ai_summary: summary };
+            const body = { ai_summary: summary };
             for (const k of ['type', 'title', 'description', 'video_url', 'deck_url', 'product_url']) {
                 if (form[k]) body[k] = form[k];
             }
 
             const postRes = await fetch('http://localhost:8000/posts/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(body),
             });
             if (!postRes.ok) throw new Error('Failed to save post.');
@@ -60,7 +60,7 @@ export default function Submit() {
 
     return (
         <div style={{ paddingTop: 64, minHeight: '100vh' }}>
-            <div style={{
+            <div className="submit-grid" style={{
                 maxWidth: 'var(--container)', margin: '0 auto',
                 padding: 'calc(var(--sp) * 8) calc(var(--sp) * 6)',
                 display: 'grid',
