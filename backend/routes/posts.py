@@ -74,3 +74,35 @@ def boost_post(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{post_id}", response_model=IdeaProductResponse)
+def update_post(
+    post_id: str,
+    body: dict,
+    user_id: str = Depends(get_current_user),
+) -> IdeaProductResponse:
+    """
+    Partial update for a post. Only the author may edit.
+    Allowed fields: title, description, video_url, deck_url, product_url, status.
+    """
+    ALLOWED = {"title", "description", "video_url", "deck_url", "product_url", "status"}
+    update_data = {k: v for k, v in body.items() if k in ALLOWED}
+    if not update_data:
+        raise HTTPException(status_code=422, detail="No valid fields to update")
+    try:
+        # Verify ownership
+        check = supabase_admin.table("posts").select("author_id").eq("id", post_id).execute()
+        if not check.data:
+            raise HTTPException(status_code=404, detail="Post not found")
+        if check.data[0]["author_id"] != user_id:
+            raise HTTPException(status_code=403, detail="Only the author may edit this post")
+        updated = supabase_admin.table("posts").update(update_data).eq("id", post_id).execute()
+        if not updated.data:
+            raise HTTPException(status_code=400, detail="Update failed")
+        return IdeaProductResponse(**updated.data[0])
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routes import auth, posts, ai, feed, search, investments
+from routes import auth, posts, ai, feed, search, investments, uploads
 
 app = FastAPI(title="Chipn Platform API", description="API for Chipn Crowdfunding and Idea Platform")
 
@@ -20,6 +20,7 @@ app.include_router(ai.router)
 app.include_router(feed.router)
 app.include_router(search.router)
 app.include_router(investments.router)
+app.include_router(uploads.router)
 
 @app.get("/")
 def read_root():

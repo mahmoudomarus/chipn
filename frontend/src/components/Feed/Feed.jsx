@@ -3,6 +3,7 @@ import React, {
 } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import {
     ArrowUp, DollarSign, FileText, X, Check,
     ExternalLink, BookOpen, Info, ChevronUp, ChevronDown, Play, Pause,
@@ -660,7 +661,8 @@ export default function Feed() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeIndex, setActiveIndex] = useState(0);
-    const [activePost, setActivePost] = useState(null); // for invest modal
+    const [activePost, setActivePost] = useState(null);
+    const [pendingNew, setPendingNew] = useState(0); // new posts arrived via Realtime
     const sentinelRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -712,6 +714,19 @@ export default function Feed() {
         return () => obs.disconnect();
     }, [loadPage, hasMore, loading, cursor]);
 
+    /* Supabase Realtime — notify on new posts without disrupting scroll */
+    useEffect(() => {
+        const channel = supabase
+            .channel('public:posts')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'posts' },
+                () => setPendingNew(n => n + 1),
+            )
+            .subscribe();
+        return () => supabase.removeChannel(channel);
+    }, []);
+
     const handleInvest = (item) => {
         if (!user) { navigate('/auth'); return; }
         setActivePost(item);
@@ -758,6 +773,23 @@ export default function Feed() {
           to   { transform: translateY(0); }
         }
       `}</style>
+
+            {/* ── New posts Realtime banner ── */}
+            {pendingNew > 0 && (
+                <button
+                    onClick={() => { loadPage(0); setPendingNew(0); window.scrollTo({ top: 64, behavior: 'smooth' }); }}
+                    style={{
+                        position: 'fixed', top: 64, left: '50%', transform: 'translateX(-50%)',
+                        zIndex: 200, background: 'var(--black)', color: 'var(--white)',
+                        padding: '8px 20px', fontSize: 'var(--text-xs)', fontWeight: 700,
+                        letterSpacing: '0.06em', textTransform: 'uppercase',
+                        border: 'none', cursor: 'pointer',
+                        animation: 'fadeIn 0.2s ease forwards',
+                    }}
+                >
+                    {pendingNew} new {pendingNew === 1 ? 'pitch' : 'pitches'} — load
+                </button>
+            )}
 
             <div
                 ref={containerRef}

@@ -35,6 +35,7 @@ pydantic_core==2.41.5
 Pygments==2.19.2
 pyiceberg==0.11.0
 PyJWT==2.11.0
+python-multipart==0.0.22
 pyparsing==3.3.2
 pyroaring==1.0.3
 python-dateutil==2.9.0.post0
