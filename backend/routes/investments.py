@@ -1,10 +1,20 @@
 import uuid
 from datetime import datetime
+from typing import List
 from fastapi import APIRouter, HTTPException
 from schemas.models import InvestmentCreate, InvestmentResponse, DueDiligenceSubmit
 from core.config import supabase
 
 router = APIRouter(prefix="/investments", tags=["investments"])
+
+@router.get("/", response_model=List[InvestmentResponse])
+def get_investments_by_investor(investor_id: str) -> List[InvestmentResponse]:
+    """Fetch all investments made by a specific user (for Profile dashboard)."""
+    try:
+        response = supabase.table("investments").select("*").eq("investor_id", investor_id).order("created_at", desc=True).execute()
+        return [InvestmentResponse(**item) for item in response.data]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/", response_model=InvestmentResponse)
 def create_investment(inv: InvestmentCreate, investor_id: str) -> InvestmentResponse:
