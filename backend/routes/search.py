@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter
-from backend.schemas.models import IdeaProductResponse
+from schemas.models import IdeaProductResponse
 import uuid
 from datetime import datetime
 

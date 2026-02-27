@@ -1,26 +1,35 @@
 import uuid
 from datetime import datetime
-from fastapi import APIRouter
-from backend.schemas.models import InvestmentCreate, InvestmentResponse, DueDiligenceSubmit
+from fastapi import APIRouter, HTTPException
+from schemas.models import InvestmentCreate, InvestmentResponse, DueDiligenceSubmit
+from core.config import supabase
 
 router = APIRouter(prefix="/investments", tags=["investments"])
 
 @router.post("/", response_model=InvestmentResponse)
-def create_investment(inv: InvestmentCreate) -> InvestmentResponse:
-    """
-    Submit an investment or support for a specific idea/product.
-    """
-    return InvestmentResponse(
-        id=str(uuid.uuid4()),
-        investor_id="investor-123",
-        status="pending_diligence" if inv.amount > 10000 else "approved",
-        created_at=datetime.utcnow(),
-        **inv.model_dump()
-    )
+def create_investment(inv: InvestmentCreate, investor_id: str) -> InvestmentResponse:
+    try:
+        data = inv.model_dump()
+        data["investor_id"] = investor_id
+        data["status"] = "pending_diligence" if inv.amount > 10000 else "approved"
+        
+        response = supabase.table("investments").insert(data).execute()
+        if not response.data:
+            raise HTTPException(status_code=400, detail="Failed to create investment")
+        return InvestmentResponse(**response.data[0])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/due-diligence")
 def submit_due_diligence(diligence: DueDiligenceSubmit):
-    """
-    Submit additional notes/documents for due diligence on large investments.
-    """
-    return {"message": "Due diligence submitted successfully", "investment_id": diligence.investment_id}
+    try:
+        response = supabase.table("investments").update({
+            "due_diligence_doc_url": diligence.notes,
+            "status": "in_review"
+        }).eq("id", diligence.investment_id).execute()
+        
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Investment not found")
+        return {"message": "Due diligence submitted successfully", "investment_id": diligence.investment_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,11 +1,54 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function Submit() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({ type: 'idea', title: '', description: '' });
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert('Submitting content to the backend for AI summarization.');
+        if (!user) {
+            setMessage("You must be logged in to submit.");
+            return;
+        }
+
+        setLoading(true);
+        setMessage('Generating AI Summary...');
+
+        try {
+            // 1. Get Summary from Anthropic via backend
+            const sumRes = await fetch(`http://localhost:8000/ai/summarize?content=${encodeURIComponent(formData.title + ' - ' + formData.description)}`, { method: 'POST' });
+            if (!sumRes.ok) throw new Error("Failed to generate AI summary.");
+            const { summary } = await sumRes.json();
+
+            setMessage('Saving to Database...');
+
+            // 2. Post to DB via backend
+            const postRes = await fetch('http://localhost:8000/posts/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    author_id: user.id,
+                    type: formData.type,
+                    title: formData.title,
+                    description: formData.description,
+                    ai_summary: summary
+                })
+            });
+
+            if (!postRes.ok) throw new Error("Failed to save post to database.");
+
+            setMessage('Successfully Submitted! AI Analysis complete. Redirecting to feed...');
+            setTimeout(() => navigate('/feed'), 2000);
+
+        } catch (error) {
+            setMessage(`Error: ${error.message}`);
+            setLoading(false);
+        }
     };
 
     return (
@@ -44,8 +87,16 @@ export default function Submit() {
                     required
                 />
 
-                <button type="submit" style={{ width: '100%' }}>SUBMIT TO AI</button>
+                <button type="submit" disabled={loading} style={{ width: '100%', opacity: loading ? 0.7 : 1 }}>
+                    {loading ? 'PROCESSING...' : 'SUBMIT TO AI'}
+                </button>
             </form>
+
+            {message && (
+                <div className="border-box mt-4" style={{ backgroundColor: message.includes('Error') ? '#ffdddd' : '#ddffdd', borderColor: message.includes('Error') ? '#cc0000' : '#00cc00' }}>
+                    <p style={{ margin: 0, fontWeight: 700 }}>{message}</p>
+                </div>
+            )}
         </div>
     );
 }

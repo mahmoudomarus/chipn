@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 export default function Auth() {
@@ -6,6 +7,7 @@ export default function Auth() {
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -19,12 +21,35 @@ export default function Auth() {
                     password: formData.password,
                 });
                 if (error) throw error;
-                setMessage('Successfully logged in!');
+                setMessage('Successfully logged in! Redirecting...');
+                setTimeout(() => navigate('/feed'), 1000);
             } else {
-                // ID document upload would go to a storage bucket here before signup
+                let docPath = null;
+                if (!formData.idDocument) {
+                    throw new Error("ID Document is strictly required for registration.");
+                }
+
+                // Upload document to Supabase storage bucket named 'documents'
+                setMessage('Uploading ID Document...');
+                const fileExt = formData.idDocument.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+                const { error: uploadError, data } = await supabase.storage
+                    .from('documents')
+                    .upload(`id_verifications/${fileName}`, formData.idDocument);
+
+                if (uploadError) throw uploadError;
+                docPath = data.path;
+
+                setMessage('Creating Account...');
                 const { error } = await supabase.auth.signUp({
                     email: formData.email,
                     password: formData.password,
+                    options: {
+                        data: {
+                            id_document_path: docPath
+                        }
+                    }
                 });
                 if (error) throw error;
                 setMessage('Registration successful! Please check your email for verification.');

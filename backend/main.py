@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.routes import auth, posts, ai, feed, search, investments
+from routes import auth, posts, ai, feed, search, investments
 
 app = FastAPI(title="Chipn Platform API", description="API for Chipn Crowdfunding and Idea Platform")
 

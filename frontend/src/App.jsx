@@ -1,5 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import NavBar from './components/Navigation/NavBar';
+import Profile from './components/Profile/Profile';
 
 function Home() {
   return (
@@ -35,23 +38,20 @@ import Search from './components/Search/Search';
 
 function App() {
   return (
-    <Router>
-      <nav style={{ padding: '16px', borderBottom: '4px solid black', display: 'flex', justifyContent: 'space-between' }}>
-        <Link to="/" style={{ color: 'black', textDecoration: 'none', fontWeight: 900, fontSize: '1.5rem' }}>CHIPN</Link>
-        <div>
-          <Link to="/search" style={{ color: 'black', textDecoration: 'none', fontWeight: 700, marginRight: '16px' }}>SEARCH</Link>
-          <Link to="/auth" style={{ color: 'black', textDecoration: 'none', fontWeight: 700 }}>LOGIN</Link>
-        </div>
-      </nav>
+    <AuthProvider>
+      <Router>
+        <NavBar />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/feed" element={<Feed />} />
-        <Route path="/submit" element={<Submit />} />
-        <Route path="/search" element={<Search />} />
-      </Routes>
-    </Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/feed" element={<Feed />} />
+          <Route path="/submit" element={<Submit />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/profile" element={<Profile />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

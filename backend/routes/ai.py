@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from backend.core.config import anthropic_client
+from core.config import anthropic_client
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 

@@ -10,15 +10,15 @@ class UserBase(BaseModel):
     verified_id_status: bool = False
 
 class IdeaProductCreate(BaseModel):
+    author_id: str
     type: str = Field(pattern="^(idea|product|request)$")
     title: str
     description: str
     content: Optional[str] = None
+    ai_summary: Optional[str] = None
 
 class IdeaProductResponse(IdeaProductCreate):
     id: str
-    author_id: str
-    ai_summary: Optional[str] = None
     status: str
     created_at: datetime
 
