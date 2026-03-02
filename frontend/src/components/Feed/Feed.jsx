@@ -4,6 +4,7 @@ import React, {
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { API_URL } from '../../lib/config';
 import {
     ArrowUp, DollarSign, FileText, X, Check,
     ExternalLink, BookOpen, Info, ChevronUp, ChevronDown, Play, Pause,
@@ -12,7 +13,7 @@ import {
 
 /* ─── Constants ──────────────────────────────────────────────────── */
 const SWIPE_THRESHOLD = 80;  // px horizontal needed to trigger action
-const API = 'http://localhost:8000';
+const API = API_URL;
 
 const TYPE_CFG = {
     idea: { tag: 'tag-idea', label: 'Idea' },

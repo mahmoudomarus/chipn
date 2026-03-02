@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../../lib/config';
 import { Lightbulb, Package, Wrench, Check, Upload, X, FileText, Film } from 'lucide-react';
 
 const TYPES = [
@@ -11,7 +12,7 @@ const TYPES = [
 
 const INITIAL = { type: 'idea', title: '', description: '', product_url: '' };
 
-const API = 'http://localhost:8000';
+const API = API_URL;
 
 /* ─── File Drop Zone ─────────────────────────────────────────────── */
 function FileDropZone({ label, accept, maxMB, uploadPath, getAuthHeaders, onUploaded, Icon: IconC }) {

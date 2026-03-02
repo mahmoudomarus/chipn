@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search as SearchIcon, X } from 'lucide-react';
+import { API_URL } from '../../lib/config';
 
 const TYPE_CFG = {
     idea: { tag: 'tag-idea' },
@@ -20,7 +21,7 @@ export default function Search() {
         if (!query.trim()) return;
         setLoading(true); setError(''); setSearched(true);
         try {
-            const res = await fetch(`http://localhost:8000/search/?query=${encodeURIComponent(query)}&deep=${isDeep}`);
+            const res = await fetch(`${API_URL}/search/?query=${encodeURIComponent(query)}&deep=${isDeep}`);
             if (!res.ok) throw new Error('Search failed.');
             setResults(await res.json());
         } catch (err) { setError(err.message); }

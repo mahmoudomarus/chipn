@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { API_URL } from '../../lib/config';
 import { Clock, LogOut, PlusCircle, Edit2, Check, X } from 'lucide-react';
 
 const STATUS_CFG = {
@@ -16,7 +17,7 @@ const TYPE_CFG = {
     request: { tag: 'tag-request' },
 };
 
-const API = 'http://localhost:8000';
+const API = API_URL;
 
 const TABS = [
     { key: 'pitches', label: 'Pitches' },
