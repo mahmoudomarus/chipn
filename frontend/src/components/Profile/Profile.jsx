@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { API_URL } from '../../lib/config';
-import { Clock, LogOut, PlusCircle, Edit2, Check, X } from 'lucide-react';
+import { Clock, LogOut, PlusCircle, Edit2, Check, X, Trash2 } from 'lucide-react';
 
 const STATUS_CFG = {
     active: { tag: 'tag-approved', label: 'Active' },
@@ -27,7 +28,7 @@ const TABS = [
 ];
 
 /* ─── Inline Pitch Editor ─────────────────────────────────────────── */
-function PitchEditor({ pitch, onSave, onCancel, getAuthHeaders }) {
+function PitchEditor({ pitch, onSave, onCancel, getAuthHeaders, addToast }) {
     const [form, setForm] = useState({
         video_url: pitch.video_url || '',
         deck_url: pitch.deck_url || '',
@@ -50,8 +51,9 @@ function PitchEditor({ pitch, onSave, onCancel, getAuthHeaders }) {
             });
             if (!res.ok) throw new Error(await res.text());
             onSave(await res.json());
+            addToast('Pitch updated', 'success');
         } catch (err) {
-            alert(err.message);
+            addToast(err.message, 'error');
         } finally {
             setSaving(false);
         }
@@ -119,8 +121,28 @@ function PitchEditor({ pitch, onSave, onCancel, getAuthHeaders }) {
 }
 
 /* ─── Profile ─────────────────────────────────────────────────────── */
+/* ─── Skeleton Loader ─────────────────────────────────────────────── */
+function SkeletonRows({ count = 3 }) {
+    return Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="skeleton-card">
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 24, alignItems: 'flex-start' }}>
+                <div>
+                    <div className="skeleton" style={{ width: 60, height: 20, marginBottom: 10 }} />
+                    <div className="skeleton" style={{ width: 80, height: 12 }} />
+                </div>
+                <div>
+                    <div className="skeleton-title" />
+                    <div className="skeleton-line w-80" />
+                    <div className="skeleton-line w-60" />
+                </div>
+            </div>
+        </div>
+    ));
+}
+
 export default function Profile() {
     const { user, signOut, getAuthHeaders } = useAuth();
+    const { addToast } = useToast();
     const navigate = useNavigate();
 
     const [tab, setTab] = useState('pitches');
@@ -131,8 +153,28 @@ export default function Profile() {
     const [loadingI, setLoadingI] = useState(false);
     const [loadingIb, setLoadingIb] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const [deletingId, setDeletingId] = useState(null);
 
     const logout = async () => { await signOut(); navigate('/'); };
+
+    /* Delete a pitch */
+    const handleDelete = useCallback(async (postId) => {
+        if (!window.confirm('Delete this pitch? This cannot be undone.')) return;
+        setDeletingId(postId);
+        try {
+            const res = await fetch(`${API}/posts/${postId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders(),
+            });
+            if (!res.ok) throw new Error(await res.text());
+            setPitches(prev => prev.filter(p => p.id !== postId));
+            addToast('Pitch deleted', 'success');
+        } catch (err) {
+            addToast(err.message, 'error');
+        } finally {
+            setDeletingId(null);
+        }
+    }, [getAuthHeaders, addToast]);
 
     /* Pitches */
     useEffect(() => {
@@ -241,7 +283,7 @@ export default function Profile() {
                 {/* ── Pitches Tab ── */}
                 {tab === 'pitches' && (
                     <div>
-                        {loadingP && <div style={{ padding: 'calc(var(--sp) * 4) 0' }}><span className="label text-muted">Loading…</span></div>}
+                        {loadingP && <SkeletonRows count={3} />}
                         {!loadingP && pitches.length === 0 && (
                             <div style={{ padding: 'calc(var(--sp) * 6) 0' }}>
                                 <p style={{ fontWeight: 300 }}>No pitches yet.</p>
@@ -273,14 +315,25 @@ export default function Profile() {
                                                 {p.deck_url && <span>· Deck ✓</span>}
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => setEditingId(isEditing ? null : p.id)}
-                                            className="btn-ghost"
-                                            style={{ color: isEditing ? 'var(--red)' : 'var(--gray-400)', padding: 4, marginTop: 2 }}
-                                            title="Edit pitch"
-                                        >
-                                            {isEditing ? <X size={14} /> : <Edit2 size={14} />}
-                                        </button>
+                                        <div style={{ display: 'flex', gap: 4, flexDirection: 'column' }}>
+                                            <button
+                                                onClick={() => setEditingId(isEditing ? null : p.id)}
+                                                className="btn-ghost"
+                                                style={{ color: isEditing ? 'var(--red)' : 'var(--gray-400)', padding: 4 }}
+                                                title="Edit pitch"
+                                            >
+                                                {isEditing ? <X size={14} /> : <Edit2 size={14} />}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(p.id)}
+                                                className="btn-ghost"
+                                                disabled={deletingId === p.id}
+                                                style={{ color: 'var(--gray-400)', padding: 4 }}
+                                                title="Delete pitch"
+                                            >
+                                                {deletingId === p.id ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <Trash2 size={14} />}
+                                            </button>
+                                        </div>
                                     </div>
                                     {isEditing && (
                                         <PitchEditor
@@ -288,6 +341,7 @@ export default function Profile() {
                                             getAuthHeaders={getAuthHeaders}
                                             onSave={handlePitchSave}
                                             onCancel={() => setEditingId(null)}
+                                            addToast={addToast}
                                         />
                                     )}
                                 </div>
@@ -299,7 +353,7 @@ export default function Profile() {
                 {/* ── Inbound Tab ── */}
                 {tab === 'inbound' && (
                     <div>
-                        {loadingIb && <div style={{ padding: 'calc(var(--sp) * 4) 0' }}><span className="label text-muted">Loading…</span></div>}
+                        {loadingIb && <SkeletonRows count={2} />}
                         {!loadingIb && inbound.length === 0 && (
                             <div style={{ padding: 'calc(var(--sp) * 6) 0' }}>
                                 <p style={{ fontWeight: 300 }}>No investments in your pitches yet.</p>
@@ -337,7 +391,7 @@ export default function Profile() {
                 {/* ── Investments Tab ── */}
                 {tab === 'investments' && (
                     <div>
-                        {loadingI && <div style={{ padding: 'calc(var(--sp) * 4) 0' }}><span className="label text-muted">Loading…</span></div>}
+                        {loadingI && <SkeletonRows count={2} />}
                         {!loadingI && investments.length === 0 && (
                             <div style={{ padding: 'calc(var(--sp) * 6) 0' }}>
                                 <p style={{ fontWeight: 300 }}>No investments yet.</p>

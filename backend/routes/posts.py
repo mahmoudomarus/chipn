@@ -106,3 +106,28 @@ def update_post(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.delete("/{post_id}")
+def delete_post(
+    post_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Delete a post. Only the author may delete.
+    Also removes any related investments.
+    """
+    try:
+        check = supabase_admin.table("posts").select("author_id").eq("id", post_id).execute()
+        if not check.data:
+            raise HTTPException(status_code=404, detail="Post not found")
+        if check.data[0]["author_id"] != user_id:
+            raise HTTPException(status_code=403, detail="Only the author may delete this post")
+        # Delete related investments first
+        supabase_admin.table("investments").delete().eq("post_id", post_id).execute()
+        supabase_admin.table("posts").delete().eq("id", post_id).execute()
+        return {"status": "deleted", "post_id": post_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

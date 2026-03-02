@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import NavBar from './components/Navigation/NavBar';
 import Profile from './components/Profile/Profile';
 import Auth from './components/Forms/Auth';
@@ -96,17 +97,19 @@ function Home() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <NavBar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/feed" element={<Feed />} />
-          <Route path="/submit" element={<Submit />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/profile" element={<Profile />} />
-        </Routes>
-      </Router>
+      <ToastProvider>
+        <Router>
+          <NavBar />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/feed" element={<Feed />} />
+            <Route path="/submit" element={<Submit />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/profile" element={<Profile />} />
+          </Routes>
+        </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }

@@ -427,6 +427,55 @@ textarea {
   flex-shrink: 0;
 }
 
+/* ─── Skeleton Loading ───────────────────────────────────────────── */
+.skeleton {
+  background: var(--gray-200);
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 0;
+}
+
+.skeleton-line {
+  height: 14px;
+  margin-bottom: 10px;
+  background: var(--gray-200);
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skeleton-line.w-60 {
+  width: 60%;
+}
+
+.skeleton-line.w-80 {
+  width: 80%;
+}
+
+.skeleton-line.w-40 {
+  width: 40%;
+}
+
+.skeleton-line.w-full {
+  width: 100%;
+}
+
+.skeleton-card {
+  padding: calc(var(--sp) * 4) 0;
+  border-top: 1px solid var(--gray-200);
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 50%;
+  background: var(--gray-200);
+  animation: shimmer 1.4s ease infinite;
+  margin-bottom: 12px;
+}
+
+.skeleton-block {
+  height: 100px;
+  background: var(--gray-200);
+  animation: shimmer 1.4s ease infinite;
+}
+
 /* ─── Utilities ───────────────────────────────────────────────────── */
 .text-center {
   text-align: center;
